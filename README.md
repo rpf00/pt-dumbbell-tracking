@@ -34,7 +34,7 @@ measurements, _i.e._, the distribution of **bonded lifetimes** of individual dum
    │
    ├─ G. Gating           physical acceptance criteria (below)
    │
-   └─ H. Output           lifetime distribution + live population + drift retest
+   └─ H. Output           lifetime distribution 
 ```
 
 ### Brief description of each step
@@ -90,11 +90,11 @@ frame-to-frame displacement distribution.
 
 ## Results
 
-| movie | magnification | pixel size (nm) | mean LT (s) | **median LT (s)** | drift retest |
-|---|---|---|---|---|---|
-| 1051 | 150 kx | 0.651 | 6.6 | **5.6** | r = 0.10, p = 0.41 |
-| 1053 | 210 kx | 0.460 | 7.4 | **6.4** | r = 0.16, p = 0.39 |
-| 1106 | 150 kx | 0.651 | 6.2 | **5.6** | r = 0.19, p = 0.21 |
+| movie | magnification | pixel size (nm) | mean LT (s) | **median LT (s)** |
+|---|---|---|---|---|
+| 1051 | 150 kx | 0.651 | 6.6 | **5.6** |
+| 1053 | 210 kx | 0.460 | 7.4 | **6.4** | 
+| 1106 | 150 kx | 0.651 | 6.2 | **5.6** |
 
 The median bonded lifetime is the most relevant result. It is computed per-dumbbell and does not
 depend on how many particles are detected. From the above table, we can see it does not change across 
