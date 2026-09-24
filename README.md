@@ -4,15 +4,14 @@ Automated detection, tracking and lifetime analysis of transient Pt–PVP–Pt "
 intermediates in liquid-phase scanning transmission electron microscopy (LP-STEM) movies
 of Pt nanoparticle micelle disassembly.
 
-Supporting code for the LP-STEM study of micelle disassembly (Figures 3c/3d and
-Discussion S2).
+Supporting code for the manuscript "Resolving Dynamic Interparticle Interactions through Metastable Pt–PVP–Pt Dumbbells during Micelle Disassembly", Figures 3c/3d and Discussion S2.
 
 ---
 
 ## What the workflow does
 
-Each LP-STEM acquisition (a Velox `.emd` HAADF stack) is converted into two quantitative
-measurements: the distribution of **bonded lifetimes** of individual dumbbells, and the
+Each LP-STEM acquisition (`.emd` file) is converted into two quantitative
+measurements, _i.e._, the distribution of **bonded lifetimes** of individual dumbbells, and the
 **live dumbbell population** as a function of time.
 
 ```
@@ -21,7 +20,7 @@ measurements: the distribution of **bonded lifetimes** of individual dumbbells, 
    ├─ A. Ingestion        read pixel size, frame time and HAADF dataset UID from the
    │                      file's own metadata
    │
-   ├─ B. Normalisation    per-frame p1–p99.9 percentile clip (NOT min–max)
+   ├─ B. Normalisation    per-frame p1–p99.9 percentile clip
    │
    ├─ C. Denoising        Gaussian filter, σ specified in nm
    │
@@ -38,15 +37,15 @@ measurements: the distribution of **bonded lifetimes** of individual dumbbells, 
    └─ H. Output           lifetime distribution + live population + drift retest
 ```
 
-### Why each step matters
+### Brief description of each step
 
-**Normalisation.** The specimen brightens substantially during acquisition as the liquid
+**1) Normalization:** The specimen brightens substantially during acquisition as the liquid
 layer thins. Under per-frame min–max normalisation a fixed detection threshold therefore
 means something different at the start and end of a movie, which makes the detector itself
 drift and can manufacture a rise in the dumbbell population. Percentile clipping holds
 sensitivity constant across the movie.
 
-**Denoising.** Liquid-cell water-scatter noise is *spatially correlated*. Non-local-means,
+**2) Denoising:** Liquid-cell water-scatter noise is *spatially correlated*. Non-local-means,
 wavelet and total-variation denoisers interpret it as structure and inject spurious
 intensity maxima, which the tracker then follows instead of real particles. A light
 Gaussian filter avoids this. Its width is chosen by maximising contrast-to-noise ratio
@@ -54,20 +53,13 @@ subject to the blur-deconvolved detected particle diameter remaining consistent 
 known ~2.4 nm Pt nanoparticle size. σ is specified **in nanometres** so the setting is
 meaningful across acquisitions of different pixel size.
 
-**Velocity, not position, correlation.** Two unrelated particles carried by the same fluid
+**3) Velocity correlation:** Two unrelated particles carried by the same fluid
 flow show high *positional* correlation regardless of any physical association.
 Differencing removes this common-mode drift, so co-motion is assessed on velocities.
 
-**Per-frame separation floor.** Two ~2.4 nm particles cannot approach more closely than
+**4) Per-frame separation floor.** Two ~2.4 nm particles cannot approach more closely than
 their own diameter. Pairs that do are tracker artifacts in which both trajectories have
 converged on the same particle, and are rejected.
-
-**Every frame is analysed.** No frames are dropped or masked. Detection seeds pairs on
-frames `0 … F-MIN_BONDED`; later frames are still denoised and still localised, so a pair
-born earlier is tracked through to the end of the stack. The one consequence worth
-knowing is that no dumbbell can be *born* in the final `MIN_BONDED` frames, which is why
-the live-population curve necessarily bends down at the end of the observation (see
-caveat 2).
 
 ---
 
