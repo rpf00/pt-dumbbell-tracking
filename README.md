@@ -100,12 +100,6 @@ The median bonded lifetime is the most relevant result. It is computed per-dumbb
 depend on how many particles are detected. From the above table, we can see it does not change across 
 different detector settings, agreeing within ~0.8 s across three independent acquisitions at two magnifications.
 
-The **drift retest** correlates frame-to-frame changes in detection yield against
-frame-to-frame changes in dumbbell births. Differencing removes any shared trend, so only
-fast coupling survives. A null result means fluctuations in the dumbbell population are
-not driven by fluctuations in detector sensitivity. It is not a test of dumbbells against
-noise — that is the job of the physical criteria above.
-
 ---
 
 ## Important observations
