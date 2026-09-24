@@ -350,7 +350,7 @@ _png = f"Figs/population_dumbbell_dynamics_{TAGNAME}.png"
 plt.savefig(_png, dpi=300, bbox_inches="tight")
 plt.show()
 print(f"saved -> {_png}")
-print(f"saved -> Figs/population_curve_{TAGNAME}.npz  (for drift_retest_matched.py)")
+print(f"saved -> Figs/population_curve_{TAGNAME}.npz")
 
 # ---------- standalone publication panels: (a) lifetime, (c) live population ----------
 # Re-draws the two reported panels on their own, without titles, at publication quality.
