@@ -19,7 +19,7 @@ measurements: the distribution of **bonded lifetimes** of individual dumbbells, 
 .emd stack
    │
    ├─ A. Ingestion        read pixel size, frame time and HAADF dataset UID from the
-   │                      file's own metadata; exclude corrupt frames
+   │                      file's own metadata
    │
    ├─ B. Normalisation    per-frame p1–p99.9 percentile clip (NOT min–max)
    │
@@ -62,6 +62,13 @@ Differencing removes this common-mode drift, so co-motion is assessed on velocit
 their own diameter. Pairs that do are tracker artifacts in which both trajectories have
 converged on the same particle, and are rejected.
 
+**Every frame is analysed.** No frames are dropped or masked. Detection seeds pairs on
+frames `0 … F-MIN_BONDED`; later frames are still denoised and still localised, so a pair
+born earlier is tracked through to the end of the stack. The one consequence worth
+knowing is that no dumbbell can be *born* in the final `MIN_BONDED` frames, which is why
+the live-population curve necessarily bends down at the end of the observation (see
+caveat 2).
+
 ---
 
 ## The core principle
@@ -80,6 +87,15 @@ Pixel size, particle density, contrast and motion differ between acquisitions, s
 | bonded-phase mean separation | 2.5 – 6.5 nm |
 | hard per-frame separation floor | ≥ 2.4 nm |
 | velocity correlation | ≥ 0.50 |
+
+`constants.txt` is split along exactly this line. Its **DETECTOR** block (normalisation
+percentiles, gaussian σ, blob scale, threshold) must be re-derived for every new
+acquisition — those numbers do not transfer. Its **PHYSICAL CRITERIA** block is the table
+above and should not be retuned per movie, because if it changes, results stop being
+comparable between movies. The **TRACKER GEOMETRY** block sits in between: it scales
+automatically with pixel size, but `MAX_STEP` is worth measuring from the real
+frame-to-frame displacement distribution, since the scaled default was found to be far
+too tight on two of the three movies here.
 
 ---
 
@@ -135,19 +151,27 @@ pt-dumbbell-tracking/
 ├── README.md
 ├── data/                     pointer to the raw .emd stacks on Zenodo (not in git)
 │   └── README.md
-├── tracking_algo/            the population engine, one script per movie
-│   ├── population_engine_optimal_1051.py
-│   ├── population_engine_optimal_1053.py
-│   └── population_engine_optimal_1106.py
+├── tracking_algo/
+│   ├── population_engine_optimal.py    the engine (no parameters inside it)
+│   └── constants.txt                   every tunable parameter lives here
 └── results/
     ├── exp_1051/
     ├── exp_1053/
     └── exp_1106/
+        └── constants_used.txt          the exact settings that produced this run
 ```
 
-There is one engine script per movie because the detector constants (σ, threshold,
-`MAX_STEP`, blob scale) are movie-specific by design. The physical criteria block is
-identical in all three — if you change it, change it in all three.
+> **Update `tracking_algo/constants.txt` to fit your specific problem. The file as
+> shipped corresponds to the default values of our experiment (movie 1053).**
+
+There is one engine and one parameter file. The engine reads `constants.txt` at startup
+and contains no hardcoded values, so a new movie needs no code change — only a new set of
+constants. Each `results/exp_*/` folder keeps a copy of the constants that produced it;
+copy one over `tracking_algo/constants.txt` to reproduce that run.
+
+Editing `constants.txt`: the format is `KEY = value`, with `#` starting a comment. A
+missing key, an unparseable value or an invalid mode is reported by name at startup
+rather than failing partway through a long run.
 
 ---
 
@@ -159,7 +183,16 @@ pip install numpy pandas matplotlib h5py scikit-image scipy
 
 # download the .emd stacks from Zenodo into data/ first (see data/README.md)
 cd tracking_algo
-python population_engine_optimal_1053.py
+
+# edit constants.txt to point at your movie and match your detector, then:
+python population_engine_optimal.py
+```
+
+To reproduce one of the published runs, copy its recorded constants first:
+
+```bash
+cp ../results/exp_1051/constants_used.txt constants.txt
+python population_engine_optimal.py
 ```
 
 Each script prints a summary table and writes into `Figs/`:
@@ -169,7 +202,12 @@ Each script prints a summary table and writes into `Figs/`:
 - `live_population_<TAG>.pdf` / `.png` — standalone panel (c), publication quality
 - `population_curve_<TAG>.npz` — births/deaths arrays, consumed by the drift retest
 
-Move the contents of `Figs/` into the matching `results/exp_<TAG>/` folder to archive a run.
+Move the contents of `Figs/` into the matching `results/exp_<TAG>/` folder to archive a
+run, along with the `constants.txt` that produced it.
+
+The engine prints its frame-0 detection count early as a sanity check. A few hundred to a
+few thousand is normal; below ~100 or above ~5000 means the detector settings are wrong
+and it is worth stopping there rather than after a long run.
 
 The PDFs are vector and are the versions to use for publication; the 600-dpi PNGs are for
 drafts and slides.

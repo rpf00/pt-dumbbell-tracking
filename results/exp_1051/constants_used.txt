@@ -1,0 +1,89 @@
+# ============================================================================
+#  constants.txt  —  all tunable parameters for population_engine_optimal.py
+#
+#  Format:  KEY = value        (# starts a comment; blank lines ignored)
+#
+#  OPERATING POINT FOR MOVIE 1051 (150 kx) - a record of the run archived in
+#  this folder. MAX_STEP = 8 px is the MEASURED p95 of frame-to-frame motion:
+#  the scaled default (3 px) covered only the 33rd percentile of real motion.
+#  The threshold was raised 0.16 -> 0.22 to break a detector/population
+#  coupling; the median lifetime was 5.6 s at both, a 16x change in count.
+#  To reproduce: copy this file over tracking_algo/constants.txt.
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+#  FILE  —  re-read these from each .emd's own metadata. NEVER inherit them.
+#  Two acquisitions whose filenames report the same magnification have been
+#  found to differ in pixel size. Confirm the dataset is HAADF, not bright
+#  field: BF is contrast-inverted and silently produces garbage.
+# ---------------------------------------------------------------------------
+EMD        = 20250110_HAADF_STEM_150_kx_1051.emd
+EMD_DS     = Data/Image/dd081586d2424a169f2f37aa5cf2a1ba/Data
+PX_NM      = 0.6505247971734647            # nm per pixel
+DT         = 0.79671549         # seconds per frame
+
+# ---------------------------------------------------------------------------
+#  DETECTOR  —  re-derive per movie (stationarity gate / CNR objective /
+#  deconvolved-diameter guard). These numbers do NOT transfer between movies.
+# ---------------------------------------------------------------------------
+NORM_LO    = 1.0                # percentile clip, low  — NOT min-max: min-max lets a
+NORM_HI    = 99.9               # percentile clip, high   drifting intensity range change
+                                #                         what the threshold means per frame
+GSIG_NM    = 0.25               # gaussian sigma in NANOMETRES (transfers across pixel sizes)
+
+# blob scale. BLOB_MODE = scale     -> min/max sigma from MIN_SIG_MULT/MAX_SIG_MULT x SCALE
+#             BLOB_MODE = diameter  -> min sigma from a physical particle diameter
+BLOB_MODE     = diameter
+MIN_SIG_MULT  = 2.0             # used when BLOB_MODE = scale
+MAX_SIG_MULT  = 6.0             # used when BLOB_MODE = scale
+MIN_DIAM_NM   = 2.4             # used when BLOB_MODE = diameter (Pt NP diameter)
+MAXSIG_MULT   = 2.5             # used when BLOB_MODE = diameter
+NUM_SIGMA     = 5
+
+# detection threshold. THRESHOLD_MODE = absolute   -> THRESHOLD used directly
+#                      THRESHOLD_MODE = fractional -> THR_FRAC x each frame's own p99
+THRESHOLD_MODE = fractional
+THRESHOLD      = 0.1101         # used when THRESHOLD_MODE = absolute
+THR_FRAC       = 0.22           # used when THRESHOLD_MODE = fractional
+
+# ---------------------------------------------------------------------------
+#  TRACKER GEOMETRY  —  pixel-space; scaled from SCALE unless measured.
+#  MAX_STEP = auto  scales with pixel size. Set an integer instead if you have
+#  MEASURED the p95 of frame-to-frame motion (on 1051 the scaled default
+#  covered only the 33rd percentile of real motion and had to be raised to 8).
+# ---------------------------------------------------------------------------
+R_MULT     = 3.0                # search radius       = R_MULT x SCALE  (min 1)
+RR_MULT    = 10.0               # centroid window     = RR_MULT x SCALE (min 2)
+MAX_STEP   = 8               # auto = round(12 x SCALE), min 2; or an integer in px
+LAMBDA_REF = 0.003              # distance penalty, referred to crop space
+
+# ---------------------------------------------------------------------------
+#  PHYSICAL CRITERIA  —  what counts as a dumbbell. In NANOMETRES, and shared
+#  across every movie. Do not retune these per acquisition: if they change,
+#  results stop being comparable between movies.
+# ---------------------------------------------------------------------------
+SEP_MIN_NM      = 2.5           # birth band, lower (mutual-NN separation at formation)
+SEP_MAX_NM      = 6.5           # birth band, upper
+SEP_DISSOC_NM   = 7.0           # death: first frame with separation >= this
+MEAN_SEP_MIN    = 2.5           # bonded-phase mean separation, lower
+MEAN_SEP_MAX    = 6.5           # bonded-phase mean separation, upper
+MIN_SEP_NM      = 2.4           # HARD per-frame floor: two 2.4 nm particles cannot be
+                                # closer than their own diameter; a pair that is has been
+                                # merged by the tracker and is rejected
+MIN_BONDED      = 6             # permanence: minimum consecutive bonded frames.
+                                # NOTE this left-truncates the lifetime distribution at
+                                # MIN_BONDED x DT (4.78 s here) — report the median.
+VC_MIN          = 0.50          # minimum TRUE-velocity correlation (co-motion)
+MATCH_TOL_NM    = 3.0           # occupancy/identity radius — NOT a separation criterion
+
+# ---------------------------------------------------------------------------
+#  STATISTICS
+# ---------------------------------------------------------------------------
+USE_TRUE_VELOCITY = True        # False reverts to POSITION correlation, which is
+                                # flow-confounded; VC_MIN would no longer be calibrated
+NPERM      = 1000               # circular-shift permutations
+TRACK_LEN  = 12
+FDR_Q      = 0.05               # BH level. Redundant by construction — it runs on the
+                                # same null the accept gate uses. Not independent
+                                # confirmation; do not report it as such.
+RNG_SEED   = 0

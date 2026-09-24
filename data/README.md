@@ -32,9 +32,11 @@ constant at the top of each script if you keep them elsewhere.
 
 | file | movie | magnification | pixel size | frames |
 |---|---|---|---|---|
-| `…_150_kx_1051.emd` | 1051 | 150 kx | 0.651 nm | 68 (1 corrupt, excluded) |
-| `…_210_kx_1053.emd` | 1053 | 210 kx | 0.460 nm | 72 (1 corrupt, excluded) |
+| `…_150_kx_1051.emd` | 1051 | 150 kx | 0.651 nm | 69 |
+| `…_210_kx_1053.emd` | 1053 | 210 kx | 0.460 nm | 72 |
 | `…_150_kx_1106.emd` | 1106 | 150 kx | 0.651 nm | — |
+
+All frames of each stack are analysed; the engine does not drop or mask any.
 
 Also archived: `PP_tracks_20250110-1053-PtDum.csv` and the `HAADF011–070` display crops —
 the hand-annotated dumbbell trajectory used to validate the tracker.
