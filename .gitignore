@@ -1,0 +1,17 @@
+# raw data lives on Zenodo, never in git
+data/*.emd
+data/*.csv
+data/*.tif
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# scratch output; archive deliberately into results/exp_XXXX/
+Figs/
+
+# os
+.DS_Store
