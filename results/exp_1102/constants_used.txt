@@ -1,0 +1,96 @@
+# ============================================================================
+#  constants_used.txt  —  every parameter of dumbbell_engine_full_final.py for this run
+#
+#  Format:  KEY = value        (# starts a comment; blank lines ignored)
+#
+#  OPERATING POINT FOR MOVIE 1102 (601 kx) - a record of the run archived in
+#  this folder. "derived" marks quantities the engine re-measures from the movie
+#  at run time; they are recorded here, not set.
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+#  FILE  —  re-read these from each acquisition's own .txt metadata. NEVER
+#  inherit them, and do not trust the pixel size stored in the .dm4 tag (it is
+#  a stale calibration, 4x off on these files; the .txt is self-consistent and
+#  the detected particle diameter of ~2.4 nm confirms it).
+# ---------------------------------------------------------------------------
+FOLDER     = images_1102_full
+DM4        = 20250110_HAADF_1102_substack(18-51).dm4
+TXT        = 20250110_HAADF_1102_substack(18-51).txt
+PX_NM      = 0.1626             # nm per pixel (from the .txt: 162.6 pm)
+DT         = 0.797              # seconds per frame (from the .txt: 797 ms)
+
+# ---------------------------------------------------------------------------
+#  FRAME QC  —  derived by fullframe_scan.py (Figs/frame_qc_1102.csv): blank,
+#  saturated, low-similarity or intensity-jump frames are dropped and become
+#  time gaps. If the QC would drop more than half the frames it is ignored.
+# ---------------------------------------------------------------------------
+FRAMES_IN_STACK  = 34
+EXCLUDED_FRAMES  = 9 frames (see frame_qc_1102.csv)
+FRAMES_USED      = 25
+
+# ---------------------------------------------------------------------------
+#  DETECTOR  —  re-derived per movie. The threshold is the lowest fraction of
+#  each frame's own p99 for which the detection yield is stationary across the
+#  movie (CV <= 0.35) AND the blur-deconvolved blob diameter is within +-15 % of
+#  the 2.4 nm Pt NP diameter. These numbers do NOT transfer between movies.
+# ---------------------------------------------------------------------------
+NORM_LO         = 1.0           # percentile clip, low
+NORM_HI         = 99.9          # percentile clip, high
+DET_GSIG_NM     = 0.50          # gaussian sigma in NANOMETRES
+DET_MIN_DIAM_NM = 1.6           # blob_log scale range, as particle diameters
+DET_MAX_DIAM_NM = 4.0
+NUM_SIGMA       = 5
+PARTICLE_DIAM_NM = 2.4          # the physical size the detector is checked against
+THR_FRAC        = 0.10          # derived: fraction of each frame's p99
+YIELD_PER_FRAME = 64          # derived (mean), for the record
+BLOB_DIAM_NM    = 2.43          # derived (deconvolved mean), for the record
+CONF_ISO        = 2.0           # annulus-CNR for a detection to count as "confident" (re-anchoring)
+
+# ---------------------------------------------------------------------------
+#  TRACKER  —  pixel-space, scaled from PX_NM; MAX_STEP is MEASURED from the
+#  frame-to-frame motion of detections (p95 of mutual-NN displacements).
+# ---------------------------------------------------------------------------
+DRIFT           = band-passed cross-correlation between consecutive frames (global drift removed)
+R_NM            = 0.98          # search radius (6 px at 0.1626 nm/px)
+RR_NM           = 1.63          # centroid window (10 px)
+LAMBDA          = 0.003         # distance penalty of the peak pick
+MAX_STEP        = auto (measured p95; printed at run start)            # derived: px per frame
+SNAP_NM         = 1.5           # re-anchor a track to the nearest detection within this distance
+PARTNER_MASK_NM = 1.2           # the partner is masked within this radius when localizing
+MERGE_NM        = 2.0           # a step landing within this distance of the partner is not a find
+UNCOLLAPSE_MAX  = 3             # consecutive frames inside contact distance -> candidate ended as a merge
+
+# ---------------------------------------------------------------------------
+#  PHYSICAL CRITERIA  —  what counts as a dumbbell. In NANOMETRES, and shared
+#  across every movie. Do not retune these per acquisition: if they change,
+#  results stop being comparable between movies.
+# ---------------------------------------------------------------------------
+SEP_MIN_NM      = 2.0           # birth band, lower (mutual-NN separation at formation) = FLOOR
+SEP_MAX_NM      = 6.5           # birth band, upper = DEATH
+DEATH_NM        = 6.5           # death: FIRST frame with separation >= this (no sustain,
+                                # no requirement that both particles be found)
+DEATH_POOL      = unimodal -> prior 6.5 nm kept
+MEAN_SEP_MIN    = 2.0           # bonded-phase mean separation, lower
+MEAN_SEP_MAX    = 6.5           # bonded-phase mean separation, upper
+MIN_SEP_NM      = 2.0           # HARD per-frame floor: 2.4 nm contact distance - 0.4 nm tolerance
+MIN_BONDED      = 4             # permanence: the minimum for which the acceptance metrics exist.
+                                # NOTE this left-truncates the lifetime distribution at
+                                # MIN_BONDED x DT (3.2 s here) — report the median.
+VC_MIN          = 0.30          # minimum TRUE-velocity correlation (co-motion), whole bond
+DUP_VC          = 0.90          # duplicate signature: vc >= DUP_VC at mean sep < DUP_SEP_NM
+DUP_SEP_NM      = 2.6           #   = two tracks on one particle -> rejected
+ISOLATION_GATE  = off           # (logged, not used)
+TWO_PEAK_GATE   = off           # (logged, not used; the intensity valley between two 2.4 nm
+                                #  particles only exists above ~4 nm, so it rejected real tight pairs)
+OCCUPANCY       = strict        # a particle in a live dumbbell cannot seed another
+
+# ---------------------------------------------------------------------------
+#  RESULT  —  for the record (from summary.csv)
+# ---------------------------------------------------------------------------
+ACCEPTED        = 35
+DISSOCIATED     = 8
+CENSORED        = 27
+MEDIAN_LT_S     = 8.0           # died-only
+MEAN_LT_S       = 9.2
+KM_MEDIAN_S     = nan           # Kaplan-Meier, censored included (nan = survival never reaches 0.5)
