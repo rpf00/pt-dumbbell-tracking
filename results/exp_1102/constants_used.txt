@@ -26,7 +26,7 @@ DT         = 0.797              # seconds per frame (from the .txt: 797 ms)
 #  time gaps. If the QC would drop more than half the frames it is ignored.
 # ---------------------------------------------------------------------------
 FRAMES_IN_STACK  = 34
-EXCLUDED_FRAMES  = 9 frames (see frame_qc_1102.csv)
+EXCLUDED_FRAMES  = 0, 1, 25, 26, 27, 28, 29, 32, 33
 FRAMES_USED      = 25
 
 # ---------------------------------------------------------------------------
@@ -55,7 +55,7 @@ DRIFT           = band-passed cross-correlation between consecutive frames (glob
 R_NM            = 0.98          # search radius (6 px at 0.1626 nm/px)
 RR_NM           = 1.63          # centroid window (10 px)
 LAMBDA          = 0.003         # distance penalty of the peak pick
-MAX_STEP        = auto (measured p95; printed at run start)            # derived: px per frame
+MAX_STEP        = auto          # (measured p95; printed at run start -- derived: px per frame)
 SNAP_NM         = 1.5           # re-anchor a track to the nearest detection within this distance
 PARTNER_MASK_NM = 1.2           # the partner is masked within this radius when localizing
 MERGE_NM        = 2.0           # a step landing within this distance of the partner is not a find
