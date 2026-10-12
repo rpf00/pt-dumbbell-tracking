@@ -1,5 +1,7 @@
 # raw data lives on Zenodo, never in git
-data/*.emd
+images_*_full/
+*.dm4
+*.emd
 data/*.csv
 data/*.tif
 
