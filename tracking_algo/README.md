@@ -11,7 +11,7 @@ Four scripts, run in this order from this folder. All of them look for the acqui
 | `top3_dumbbells_anim_final.py` | Animation of the three longest-lived dissociated dumbbells of each movie: tracking overlaid on the raw and denoised frames, and separation vs time with the dissociation line. Uses the tracks saved by the engine, so nothing is re-tracked. Needs `ffmpeg` for `.mp4` (falls back to `.gif`). | `images_<id>_full/`, `Figs/engine_dumbbells_<id>-full.csv`, `Figs/engine_tracks_<id>-full.csv` | `Figs/top3_dumbbells_<id>.mp4`, `Figs/top3_dumbbells_final_<id>.png` |
 
 Parameters live in the CONFIG block at the top of `dumbbell_engine_full_final.py`. The physical
-criteria (in nanometres) are shared across movies and should not be retuned per acquisition; the
+criteria (in nanometers) are shared across movies and should not be retuned per acquisition. The
 detector threshold, `MAX_STEP` and the excluded frames are measured from each movie and written to
 `Figs/constants_used_<id>.txt`, which is the file archived in `../results/exp_<id>/`.
 
