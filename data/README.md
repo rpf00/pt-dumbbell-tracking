@@ -8,12 +8,14 @@ from the `.dm4` tag).
 
 ## Download
 
-**Zenodo record:** <!-- TODO: replace with the DOI once the record is published -->
-`https://doi.org/10.5281/zenodo.XXXXXXX`
+**Zenodo record:** 
+`https://doi.org/10.5281/zenodo.23319305`
 
 Download each stack with its `.txt` into a folder named `images_<id>_full/`:
 
 ```
+images_1051_benchmark.zip/
+images_1053_benchmark.zip/
 images_1051_full/
 ├── 20250110_HAADF_1051_substack(33-68).dm4
 └── 20250110_HAADF_1051_substack(33-68).txt
