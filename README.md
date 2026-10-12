@@ -1,6 +1,6 @@
 # Pt–PVP–Pt Dumbbell Detection and Tracking
 
-Automated detection, tracking and lifetime analysis of transient Pt–PVP–Pt "dumbbell"
+Automated detection, tracking and lifetime analysis of transient Pt–PVP–Pt dumbbell
 intermediates in liquid-phase scanning transmission electron microscopy (LP-STEM) movies
 of Pt nanoparticle micelle disassembly.
 
@@ -8,7 +8,7 @@ Supporting code for the manuscript "Resolving Dynamic Interparticle Interactions
 
 ---
 
-## What the workflow does
+## About the workflow
 
 Each LP-STEM acquisition (`.dm4` stack with its Velox `.txt` metadata) is converted into two quantitative
 measurements, *i.e.*, the distribution of **bonded lifetimes** of individual dumbbells, and the **live dumbbell population** as a function of time.
@@ -46,7 +46,7 @@ the detector itself drift and leading to false dumbbell population estimates. Th
 ensures that sensitivity remains constant across all frames.
 
 **2) Denoising:** The observed noise in liquid-cell water-scatter frames is spatially correlated.
-Some classical denoisers (*e.g.*, NL-means, wavelet, total-variation) and self-supervised models that assume
+Some classical denoisers (*e.g.*, NL-means, wavelet, total-variation) and self-supervised models (_e.g._, N2V) that assume
 pixel-independent noise inject spurious intensity maxima, which the tracker then follows instead of real
 particles. We then use a light Gaussian filter to avoid this issue. The detection threshold is chosen as the
 lowest value for which the detection yield is stationary across the movie and the detected particle diameter
@@ -55,8 +55,7 @@ is consistent with the known ~2.4 nm Pt nanoparticle size.
 **3) Tracking:** Each particle of a pair is propagated frame by frame after a global drift correction, with
 the partner masked so that two tracks cannot collapse onto one particle, and is re-anchored to the nearest
 detection whenever one lies within 1.5 nm. The tracker was validated against hand-annotated
-crops of the same acquisitions (sub-nanometre localization; annotated dumbbell lifetimes reproduced to within
-one frame).
+crops of the same acquisitions (exps 1051 and 1053), with sub-nanometer localization error.
 
 **4) Velocity correlation:** Two unrelated particles carried by the same fluid
 flow show high positional correlation regardless of any physical association.
@@ -65,18 +64,19 @@ evaluated based on velocities.
 
 **5) Per-frame separation floor.** Two ~2.4 nm particles cannot approach more closely than
 their own diameter. We consider pairs that do so as part of trajectories that converged to the same particle
-(and are ultimately discarded). The floor is set at 2.0 nm (the contact distance with a 0.4 nm tolerance
-for localization error).
+(and are ultimately discarded). The floor is set at 2.0 nm, which is the lower bound corresponding to
+the contact distance with a 0.4 nm tolerance for localization/annotation error.
 
 ---
 
 ## Core principle
 
-> **Physical criteria are constant in nanometres. Every pixel-space parameter is
+> **Physical criteria are constant (in nanometers) across different movies. Every pixel-space parameter is
 > re-derived per movie.**
 
 Pixel size, particle density, contrast and motion differ between acquisitions, so the
-detector is re-fitted for each movie. What counts as a dumbbell does not change:
+detector is re-fitted for each movie. However, the criteria to define a dumbbell do not change. 
+The specific values have been established from the benchmark analysis against the hand-annotated cropped frames.
 
 | criterion                                 | value                |
 | ----------------------------------------- | -------------------- |
@@ -88,11 +88,11 @@ detector is re-fitted for each movie. What counts as a dumbbell does not change:
 | velocity correlation                      | ≥ 0.30               |
 | duplicate rejection                       | velocity correlation ≥ 0.90 at < 2.6 nm (two tracks on one particle) |
 
-`constants_used.txt` is split along exactly this line. Its **DETECTOR** block (normalization
-percentiles, gaussian σ, blob scale, threshold) and its **TRACKER** block (`MAX_STEP`, excluded
-frames) are re-derived for every new acquisition by the engine itself (those numbers do not
-transfer). **PHYSICAL CRITERIA** is the table above and should not be retuned per movie,
-because if it changes, results stop being comparable between movies.
+`constants_used.txt` is split along exactly this line. The `DETECTOR` block (normalization
+percentiles, gaussian σ, blob scale, threshold) and the `TRACKER` block (`MAX_STEP`, excluded
+frames) are re-derived for every new acquisition by the engine itself (the specific numbers are not transferable). 
+`PHYSICAL CRITERIA` is the table above and should not be retuned per movie,since it would lead to results being not 
+directly comparable between movies.
 
 ---
 
@@ -109,27 +109,28 @@ depend on how many particles are detected. From the above table, we can see it a
 across three independent acquisitions, and it was stable within ~1 s across every detector and
 gate configuration tried on movie 1053.
 
-Two further acquisitions (1110 and 1117) were recorded with different camera settings — 1117 with
-frames twice as long (1.57 s), 1110 at higher magnification (850 kx, 0.115 nm/px) with shorter,
-noisier frames — so the particle pairs are sampled differently in time and most of them never
-separate within the recording. Their lifetimes cannot be compared directly with the three movies
+Two further acquisitions (1110 and 1117) were recorded with different camera settings. In particular, 1117 had
+frames twice as long (1.57 s) and 1110 had higher magnification (850 kx, 0.115 nm/px) with shorter,
+noisier frames. In such cases, the particle pairs are sampled differently in time and most of them do not
+dissociate within the recording time. For such reasons, their lifetimes are not directly comparable with the three movies
 above and are not reported here.
 
 ---
 
-## Important observations
+## Important remarks
 
 1. **Lifetimes are left-truncated and right-censored.** The four-frame minimum means no
 lifetime shorter than `4 × frame time` (~3.2 s) can be measured, and dumbbells that are still
 bonded at the end of the recording (39–77 % of the accepted pairs, depending on the movie) are
-right-censored. Hence why we focus on reporting the life-time median of the dissociated dumbbells,
-rather than the mean; `summary.csv` also carries the Kaplan–Meier median, which includes the censored pairs.
+right-censored, _i.e._, dissociations cannot be reported over the last 4 frames. Hence why we
+focus on reporting the life-time median of the dissociated dumbbells,
+rather than the mean. The `summary.csv` file also contains the Kaplan–Meier median, which includes the censored pairs.
 2. **Dumbbell counts do not transfer between movies.** Detection counts, accepted counts and
 population magnitudes depend on the field of view and the detector. Only the lifetime
 distribution is meant to be compared across acquisitions.
 3. **The live population rises throughout the recordings.** No births can be observed in the last
-four frames, so the terminal shape of the curve is a boundary effect; the curves should be read as
-"increasing over the observation", not as having a peak.
+four frames, so the terminal shape of the curve is a boundary effect. One should interpret the curves
+as "increasing over the observation", not as having a peak necessarily.
 
 ---
 
@@ -138,10 +139,10 @@ four frames, so the terminal shape of the curve is a boundary effect; the curves
 ```
 pt-dumbbell-tracking/
 ├── README.md
-├── data/                     pointer to the raw .dm4 stacks and .txt metadata on Zenodo (not in git)
+├── data/                     pointer to the raw .dm4 stacks and .txt metadata on Zenodo 
 │   └── README.md
 ├── tracking_algo/
-│   ├── fullframe_scan.py                 triage of a new movie (frame QC, drift, detector verdict)
+│   ├── fullframe_scan.py                 triage of a new movie 
 │   ├── dumbbell_engine_full_final.py     the engine (parameters in its CONFIG block)
 │   ├── fullframe_plot_final.py           publication figures from a run
 │   └── top3_dumbbells_anim_final.py      animation of the three longest-lived dumbbells
@@ -155,7 +156,7 @@ pt-dumbbell-tracking/
         ├── lifetime_distribution.png / live_population.png / mean_separation.png
         └── top3_dumbbells.mp4
 ```
-> **The engine as shipped corresponds to the configuration of our experiments; only `FOLDER`
+> **The engine corresponds to the configuration of our experiments and only `FOLDER`
 > needs to be changed between movies.** Every per-movie quantity (pixel size, frame time, detector
 > threshold, `MAX_STEP`, excluded frames, death distance) is derived from the movie at run time and
 > written to `Figs/constants_used_<id>.txt`, which is the file archived in `results/exp_<id>/`.
@@ -186,13 +187,10 @@ Each engine run prints a summary table and writes into `Figs/`:
 - `summary_<id>.csv` (statistics, population curves and every accepted lifetime)
 - `engine_dumbbells_<id>-full.csv`, `engine_tracks_<id>-full.csv` (accepted dumbbells and their tracks)
 - `engine_candidates_<id>-full_final.csv` (every candidate pair with its outcome and reason)
-- `death_pool_<id>-full.png` (the separation pool the death distance is checked against)
+- `death_pool_<id>-full.png` (the separation pool the dissociation distance is checked against)
 - `constants_used_<id>.txt`
 
 Move the contents of `Figs/` into the matching `results/exp_<id>/` folder to archive a run.
-
-The engine prints the detection yield per frame as a sanity check. In our case,
-a few hundred per 1024 × 1024 frame are reasonable values. It might change depending on the users' experiments.
 
 ## Requirements
 
