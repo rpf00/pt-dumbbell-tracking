@@ -10,15 +10,15 @@ Supporting code for the manuscript "Resolving Dynamic Interparticle Interactions
 
 ## What the workflow does
 
-Each LP-STEM acquisition (`.emd` file) is converted into two quantitative
-measurements, _i.e._, the distribution of **bonded lifetimes** of individual dumbbells, and the
-**live dumbbell population** as a function of time.
+Each LP-STEM acquisition (`.dm4` stack with its Velox `.txt` metadata) is converted into two quantitative
+measurements, *i.e.*, the distribution of **bonded lifetimes** of individual dumbbells, and the **live dumbbell population** as a function of time.
 
 ```
-.emd stack
+.dm4 stack + .txt
    │
-   ├─ A. Ingestion        read pixel size, frame time and HAADF dataset UID from the
-   │                      file's own metadata
+   ├─ A. Ingestion        read pixel size and frame time from the acquisition's own
+   │                      .txt metadata; flag corrupt frames (blank, saturated,
+   │                      intensity jumps) so they become time gaps
    │
    ├─ B. Normalization    per-frame p1–p99.9 percentile clip
    │
@@ -30,34 +30,43 @@ measurements, _i.e._, the distribution of **bonded lifetimes** of individual dum
    ├─ E. Pairing          mutual-nearest-neighbour pairs inside the birth band
    │
    ├─ F. Tracking         two-particle propagation to dissociation
-   │                      (predict → distance-penalised peak → centroid → step clamp)
+   │                      (drift correction → distance-penalised peak → centroid →
+   │                      step clamp → re-anchoring to the nearest detection)
    │
    ├─ G. Gating           physical acceptance criteria (below)
    │
-   └─ H. Output           lifetime distribution 
+   └─ H. Output           lifetime distribution and live population
 ```
 
 ### Brief description of each step
 
-**1) Normalization:** The nanoparticles brighten substantially over the course of the data acquisition process. 
-Thus, the min–max normalization scheme (per-frame) would provide a fixed detection threshold, making 
+**1) Normalization:** The nanoparticles brighten substantially over the course of the data acquisition process.
+Thus, the min–max normalization scheme (per-frame) would provide a fixed detection threshold, making
 the detector itself drift and leading to false dumbbell population estimates. The percentile clipping approach
 ensures that sensitivity remains constant across all frames.
 
-**2) Denoising:** The observed noise in liquid-cell water-scatter frames is spatially correlated. 
-Some classical denoisers (_e.g._, NL-means, wavelet, total-variation) inject spurious
-intensity maxima, which the tracker then follows instead of real particles. We then use a
-Gaussian filter to avoid this issue. Its width is chosen by maximizing contrast-to-noise ratio,
-subject to the detected particle diameter being consistent with the known ~2.4 nm Pt nanoparticle size. 
+**2) Denoising:** The observed noise in liquid-cell water-scatter frames is spatially correlated.
+Some classical denoisers (*e.g.*, NL-means, wavelet, total-variation) and self-supervised models that assume
+pixel-independent noise inject spurious intensity maxima, which the tracker then follows instead of real
+particles. We then use a light Gaussian filter to avoid this issue. The detection threshold is chosen as the
+lowest value for which the detection yield is stationary across the movie and the detected particle diameter
+is consistent with the known ~2.4 nm Pt nanoparticle size.
 
-**3) Velocity correlation:** Two unrelated particles carried by the same fluid
+**3) Tracking:** Each particle of a pair is propagated frame by frame after a global drift correction, with
+the partner masked so that two tracks cannot collapse onto one particle, and is re-anchored to the nearest
+detection whenever one lies within 1.5 nm. The tracker was validated against hand-annotated
+crops of the same acquisitions (sub-nanometre localization; annotated dumbbell lifetimes reproduced to within
+one frame).
+
+**4) Velocity correlation:** Two unrelated particles carried by the same fluid
 flow show high positional correlation regardless of any physical association.
-Differencing (_i.e._, taking velocity correlation instead) removes this common drift, so co-motion is 
+Differencing (*i.e.*, taking velocity correlation instead) removes this common drift, so co-motion is
 evaluated based on velocities.
 
-**4) Per-frame separation floor.** Two ~2.4 nm particles cannot approach more closely than
-their own diameter. We consider pairs that do so as part of trajectories that converged to the same particle 
-(and are ultimately discarded).
+**5) Per-frame separation floor.** Two ~2.4 nm particles cannot approach more closely than
+their own diameter. We consider pairs that do so as part of trajectories that converged to the same particle
+(and are ultimately discarded). The floor is set at 2.0 nm (the contact distance with a 0.4 nm tolerance
+for localization error).
 
 ---
 
@@ -69,48 +78,58 @@ their own diameter. We consider pairs that do so as part of trajectories that co
 Pixel size, particle density, contrast and motion differ between acquisitions, so the
 detector is re-fitted for each movie. What counts as a dumbbell does not change:
 
-| criterion | value |
-|---|---|
-| birth (mutual-NN separation at formation) | 2.5 – 6.5 nm |
-| death (dissociation) | separation ≥ 7.0 nm |
-| minimum bonded duration | 6 consecutive frames |
-| bonded-phase mean separation | 2.5 – 6.5 nm |
-| hard per-frame separation floor | ≥ 2.4 nm |
-| velocity correlation | ≥ 0.50 |
+| criterion                                 | value                |
+| ----------------------------------------- | -------------------- |
+| birth (mutual-NN separation at formation) | 2.0 – 6.5 nm         |
+| death (dissociation)                      | first frame with separation ≥ 6.5 nm |
+| minimum bonded duration                   | 4 consecutive frames |
+| bonded-phase mean separation              | 2.0 – 6.5 nm         |
+| hard per-frame separation floor           | ≥ 2.0 nm             |
+| velocity correlation                      | ≥ 0.30               |
+| duplicate rejection                       | velocity correlation ≥ 0.90 at < 2.6 nm (two tracks on one particle) |
 
-`constants.txt` is split along exactly this line. Its **DETECTOR** block (normalization
-percentiles, gaussian σ, blob scale, threshold) must be re-derived for every new
-acquisition (those numbers do not transfer automatically). **PHYSICAL CRITERIA** is the table
-above and should not be retuned per movie, because if it changes, results stop being
-comparable between movies. The **TRACKER GEOMETRY** block scales
-automatically with pixel size, but `MAX_STEP` should be measured from the real
-frame-to-frame displacement distribution.
+`constants_used.txt` is split along exactly this line. Its **DETECTOR** block (normalization
+percentiles, gaussian σ, blob scale, threshold) and its **TRACKER** block (`MAX_STEP`, excluded
+frames) are re-derived for every new acquisition by the engine itself (those numbers do not
+transfer). **PHYSICAL CRITERIA** is the table above and should not be retuned per movie,
+because if it changes, results stop being comparable between movies.
 
 ---
 
 ## Results
 
-| movie | magnification | pixel size (nm) | mean LT (s) | **median LT (s)** |
-|---|---|---|---|---|
-| 1051 | 150 kx | 0.651 | 6.6 | **5.6** |
-| 1053 | 210 kx | 0.460 | 7.4 | **6.4** | 
-| 1106 | 150 kx | 0.651 | 6.2 | **5.6** |
+| movie | magnification | pixel size (nm) | frame time (s) | accepted (dissociated) | mean LT (s) | **median LT (s)** |
+| ----- | ------------- | --------------- | -------------- | ---------------------- | ----------- | ----------------- |
+| 1051  | 601 kx        | 0.1626          | 0.797          | 139 (49)               | 8.6         | **7.2**           |
+| 1053  | 601 kx        | 0.1626          | 0.797          | 281 (171)              | 10.4        | **8.0**           |
+| 1102  | 601 kx        | 0.1626          | 0.797          | 35 (8)                 | 9.2         | **8.0**           |
 
 The median bonded lifetime is the most relevant result. It is computed per-dumbbell and does not
-depend on how many particles are detected. From the above table, we can see it does not change across 
-different detector settings, agreeing within ~0.8 s across three independent acquisitions at two magnifications.
+depend on how many particles are detected. From the above table, we can see it agrees within ~0.8 s
+across three independent acquisitions, and it was stable within ~1 s across every detector and
+gate configuration tried on movie 1053.
+
+Two further acquisitions (1110 and 1117) were recorded with different camera settings — 1117 with
+frames twice as long (1.57 s), 1110 at higher magnification (850 kx, 0.115 nm/px) with shorter,
+noisier frames — so the particle pairs are sampled differently in time and most of them never
+separate within the recording. Their lifetimes cannot be compared directly with the three movies
+above and are not reported here.
 
 ---
 
 ## Important observations
 
-1. **Lifetimes are left-truncated and right-censored.** The six-frame minimum means no
-   lifetime shorter than `6 × frame time` (~ 4.78 s) can be measured, and dumbbells that are still
-   being formed over the final 6 frames are not accounted for.
-   Hence why we focus on reporting the life-time median, rather than the mean.
+1. **Lifetimes are left-truncated and right-censored.** The four-frame minimum means no
+lifetime shorter than `4 × frame time` (~3.2 s) can be measured, and dumbbells that are still
+bonded at the end of the recording (39–77 % of the accepted pairs, depending on the movie) are
+right-censored. Hence why we focus on reporting the life-time median of the dissociated dumbbells,
+rather than the mean; `summary.csv` also carries the Kaplan–Meier median, which includes the censored pairs.
 2. **Dumbbell counts do not transfer between movies.** Detection counts, accepted counts and
-   population magnitudes depend on the field of view and the detector. Only the lifetime
-   distribution is meant to be compared across acquisitions.
+population magnitudes depend on the field of view and the detector. Only the lifetime
+distribution is meant to be compared across acquisitions.
+3. **The live population rises throughout the recordings.** No births can be observed in the last
+four frames, so the terminal shape of the curve is a boundary effect; the curves should be read as
+"increasing over the observation", not as having a peak.
 
 ---
 
@@ -119,65 +138,63 @@ different detector settings, agreeing within ~0.8 s across three independent acq
 ```
 pt-dumbbell-tracking/
 ├── README.md
-├── data/                     pointer to the raw .emd stacks on Zenodo (not in git)
+├── data/                     pointer to the raw .dm4 stacks and .txt metadata on Zenodo (not in git)
 │   └── README.md
 ├── tracking_algo/
-│   ├── population_engine_optimal.py    the engine (no parameters inside it)
-│   └── constants.txt                   every tunable parameter lives here
+│   ├── fullframe_scan.py                 triage of a new movie (frame QC, drift, detector verdict)
+│   ├── dumbbell_engine_full_final.py     the engine (parameters in its CONFIG block)
+│   ├── fullframe_plot_final.py           publication figures from a run
+│   └── top3_dumbbells_anim_final.py      animation of the three longest-lived dumbbells
 └── results/
     ├── exp_1051/
     ├── exp_1053/
-    └── exp_1106/
-        └── constants_used.txt          the exact settings that produced this run
+    └── exp_1102/
+        ├── constants_used.txt          the exact settings (given and derived) that produced this run
+        ├── summary.csv                 lifetime statistics, population curves, every accepted lifetime
+        ├── engine_dumbbells.csv        one row per accepted dumbbell
+        ├── lifetime_distribution.png / live_population.png / mean_separation.png
+        └── top3_dumbbells.mp4
 ```
-
-> **Update `tracking_algo/constants.txt` to fit your specific problem. The file as
-> shipped corresponds to the default values of our experiment (exp_1053).**
-
-There is one engine and one parameter file. The engine reads `constants.txt` 
-so new acquisition frames will not need any code changes (only a new set of
-constants). Each `results/exp_*/` folder keeps a copy of the constants that produced it.
-The user should copy one over `tracking_algo/constants.txt` to reproduce that specific run.
-
-When editing `constants.txt`, the format is `KEY = value` (`#` starting a comment). A
-missing key, an unparseable value or an invalid mode is reported by name at startup
-rather than failing partway through a long run.
+> **The engine as shipped corresponds to the configuration of our experiments; only `FOLDER`
+> needs to be changed between movies.** Every per-movie quantity (pixel size, frame time, detector
+> threshold, `MAX_STEP`, excluded frames, death distance) is derived from the movie at run time and
+> written to `Figs/constants_used_<id>.txt`, which is the file archived in `results/exp_<id>/`.
 
 ---
 
 ## Running it
 
-```bash
+```
 python -m venv .venv && source .venv/bin/activate
-pip install numpy pandas matplotlib h5py scikit-image scipy
+pip install numpy pandas matplotlib scipy scikit-image ncempy
 
-# download the .emd stacks from Zenodo into data/ first (see data/README.md)
+# download the .dm4 stacks and their .txt metadata from Zenodo into images_<id>_full/ (see data/README.md)
 cd tracking_algo
 
-# edit constants.txt to point at your movie and match your detector, then:
-python population_engine_optimal.py
+python fullframe_scan.py                  # one QC / detector verdict per movie, writes Figs/frame_qc_<id>.csv
+
+# set FOLDER = "images_<id>_full" in dumbbell_engine_full_final.py, then:
+python dumbbell_engine_full_final.py
+
+python fullframe_plot_final.py            # figures for the movies listed in MOVIES
+python top3_dumbbells_anim_final.py       # animations (needs ffmpeg for .mp4; falls back to .gif)
 ```
 
-To reproduce one of the published runs, copy its recorded constants first:
+Each engine run prints a summary table and writes into `Figs/`:
 
-```bash
-cp ../results/exp_1051/constants_used.txt constants.txt
-python population_engine_optimal.py
-```
+- `engine_<id>-full_final.png` (the four-panel overview)
+- `summary_<id>.csv` (statistics, population curves and every accepted lifetime)
+- `engine_dumbbells_<id>-full.csv`, `engine_tracks_<id>-full.csv` (accepted dumbbells and their tracks)
+- `engine_candidates_<id>-full_final.csv` (every candidate pair with its outcome and reason)
+- `death_pool_<id>-full.png` (the separation pool the death distance is checked against)
+- `constants_used_<id>.txt`
 
-Each script prints a summary table and writes into `Figs/`:
+Move the contents of `Figs/` into the matching `results/exp_<id>/` folder to archive a run.
 
-- `population_dumbbell_dynamics_<TAG>.png` (the three-panel overview)
-- `lifetime_distribution_<TAG>.pdf` / `.png` (standalone panel (a))
-- `live_population_<TAG>.pdf` / `.png` (standalone panel (c))
-- `population_curve_<TAG>.npz` (births/deaths arrays)
-
-Move the contents of `Figs/` into the matching `results/exp_<TAG>/` folder to archive a
-run, along with the `constants.txt` that produced it.
-
-The engine prints the detection count (at frame 0) as a sanity check. In our case, 
-a few hundred to a few thousand are reasonable values. It might change depending on the users' experiments.
+The engine prints the detection yield per frame as a sanity check. In our case,
+a few hundred per 1024 × 1024 frame are reasonable values. It might change depending on the users' experiments.
 
 ## Requirements
 
-Python 3.9+, with `numpy`, `pandas`, `matplotlib`, `h5py`, `scikit-image` and `scipy`.
+Python 3.9+, with `numpy`, `pandas`, `matplotlib`, `scipy`, `scikit-image` and `ncempy`
+(`ffmpeg` on the path for the animations).
