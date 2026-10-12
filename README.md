@@ -124,7 +124,7 @@ lifetime shorter than `4 × frame time` (~3.2 s) can be measured, and dumbbells 
 bonded at the end of the recording (39–77 % of the accepted pairs, depending on the movie) are
 right-censored, _i.e._, dissociations cannot be reported over the last 4 frames. Hence why we
 focus on reporting the life-time median of the dissociated dumbbells,
-rather than the mean. The `summary.csv` file also contains the Kaplan–Meier median, which includes the censored pairs.
+rather than the mean. 
 2. **Dumbbell counts do not transfer between movies.** Detection counts, accepted counts and
 population magnitudes depend on the field of view and the detector. Only the lifetime
 distribution is meant to be compared across acquisitions.
