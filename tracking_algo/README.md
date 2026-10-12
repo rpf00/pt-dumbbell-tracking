@@ -1,7 +1,6 @@
 # tracking_algo
 
-Four scripts, run in this order from this folder. All of them look for the acquisitions in
-`images_<id>_full/` (one `.dm4` stack and its Velox `.txt` per folder) and write to `Figs/`.
+Four scripts, run in this order from this folder. All of them look for the acquisitions in `images_<id>_full/` folders placed inside this directory, next to the scripts (one .dm4 stack and its Velox .txt per folder; see `../data/README.md` for the download), and write to `Figs/`.
 
 | script | what it does | reads | writes |
 | --- | --- | --- | --- |
