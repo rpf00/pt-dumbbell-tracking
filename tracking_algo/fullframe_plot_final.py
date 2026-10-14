@@ -11,7 +11,7 @@
 # ============================================================
 import os, numpy as np, pandas as pd, matplotlib.pyplot as plt
 
-MOVIES = ["1051", "1053", "1102"]
+MOVIES = ["1051", "1053", "1102", "1110"]
 OUT, DPI = "Figs", 600
 plt.rcParams.update({"font.size": 15, "axes.labelsize": 17, "legend.fontsize": 14, "xtick.labelsize": 14, "ytick.labelsize": 14})
 
@@ -27,6 +27,7 @@ for mid in MOVIES:
     # ---- (1) lifetime distribution (dissociated only)
     lt = S[S.section == "lifetimes"]; x = lt[col].astype(float).values; died = lt.t.astype(float).values == 1
     L = x[died]
+    L = L[L >= 3.18]   # same minimum measurable lifetime as the 0.797 s movies (4 x 0.797 s)
     fig, ax = plt.subplots(figsize=(7, 5.6))
     bins = np.arange(L.min() - DT / 2, L.max() + DT, DT) if len(L) else 10
     ax.hist(L, bins=bins, color="steelblue", edgecolor="black", linewidth=1.2)
